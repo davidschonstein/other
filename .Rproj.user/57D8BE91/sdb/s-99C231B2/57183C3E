@@ -1,0 +1,15 @@
+{
+    "contents" : "bigcommerce_personas <- function() {\n\n\t# load libraries\n\n\n\t# set path to data input and output\n\tpath <- file.path(Sys.getenv(\"HOME\"), \"Documents\", \"data\")\n\n\t# load data\n\tdat <- read.delim(file.path(path, \"input\", \"Survey Results.txt\"), stringsAsFactors=FALSE)\n\n}",
+    "created" : 1355551213277.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1744928007",
+    "id" : "57183C3E",
+    "lastKnownWriteTime" : 1355552398,
+    "path" : "~/Documents/code/work/other/bigcommerce_personas.R",
+    "properties" : {
+    },
+    "source_on_save" : false,
+    "type" : "r_source"
+}
