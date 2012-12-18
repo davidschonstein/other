@@ -24,7 +24,9 @@ library(randomForest)
 
 # Import the survey data
 #dat <- read.csv('survey_results.csv', sep="\t")
-dat <- read.csv('survey_results2.csv')
+path <- file.path(Sys.getenv("HOME"), "Documents", "data")
+dat <- read.delim(file.path(path, "input", "Survey Results.txt"), stringsAsFactors=TRUE)
+# dat <- read.csv('survey_results2.csv')
 
 # Clean up the data and get it into the right data types
 dat$StartDate <- strptime(as.character(dat$StartDate), format="%m/%d/%Y %H:%M")
@@ -65,7 +67,7 @@ dat$Ship.Range[dat$Ship.Nationwide=="Nationwide"] <- "Nationwide"
 dat$Ship.Range[dat$Ship.International=="International"] <- "International"
 dat$Ship.Range <- factor(dat$Ship.Range)
 dat$Own.Domain <- ifelse(dat$own_domain==1, TRUE, FALSE)
-dat$Subdomain <- ifelse(dat$domaintype=="subdomain", TRUE, FALSE)
+# dat$Subdomain <- ifelse(dat$domaintype=="subdomain", TRUE, FALSE) # domaintype does not exist
 dat$Annual.Plan <- ifelse(dat$billingcycle=="Annually", TRUE, FALSE)
 
 # Interestingly, there are some regional that also ship international
@@ -79,7 +81,7 @@ length(dat[as.character(dat$Industry_Survey)== as.character(dat$industry), c("In
 firmagraphic <- c("Industry_Survey", "Physical", "Switched", "Products_From", "Experienced", "Loc.Region")
 
 # Behavioural variables
-behavioral <-c("ShipFromPlaces", "Staff_Total", "Staff_Store", "Marketing.Budget", "Marketing_Spend", "Marketing_Spend_Other", "age", "Own.Domain", "Subdomain", "Ship.Range", "plan_name", "Annual.Plan")
+behavioral <-c("ShipFromPlaces", "Staff_Total", "Staff_Store", "Marketing.Budget", "Marketing_Spend", "Marketing_Spend_Other", "age", "Own.Domain", "Ship.Range", "plan_name", "Annual.Plan") # "Subdomain",
 
 # Success variables: things that happen as a result of demographics and behaviours; not some success may not be
 # observered.  We don't know if a physical values having an on-line store to bring people to the physical store
@@ -98,6 +100,22 @@ firm.dat$Cluster <- groups
 firm.dat$X_revenue_lm <- dat$X_revenue_lm
 firm.dat$X_orders_lm <- dat$X_orders_lm
 firm.dat$age <- dat$age
+
+# cluster on revenue
+test <- firm.dat.dummy
+test$X_revenue_lm <- dat$X_revenue_lm
+test$X_orders_lm <- dat$X_orders_lm
+test$age <- as.numeric(dat$age)
+test[, names(test) %in% c("X_revenue_lm", "X_orders_lm", "age")] <- data.frame(sapply(test[, names(test) %in% c("X_revenue_lm", "X_orders_lm", "age")], scale))
+fit <- hclust(dist(test), method="ward")
+groups <- cutree(fit, k=3)
+plot(fit)
+rect.hclust(fit, k=3, border="red")
+aggregate(test$X_revenue_lm,list(groups),mean)
+aggregate(test$X_revenue_lm,list(groups),sd)
+qplot(factor(groups), X_revenue_lm, data=test, geom=c('boxplot'))
+qplot(factor(groups), age, data=test, geom=c('boxplot'), ylim=c(0,1))
+
 
 # Some visualisations:
 rev.hist <- qplot(X_revenue_lm, data=firm.dat, geom=c('histogram'), binwidth=1000)
@@ -159,6 +177,7 @@ ordersize.density2 <- qplot(X_revenue_lm/X_orders_lm, data=high.rev.dat, geom='h
 # Look at behaviour as it relates to demographics
 firm.behavior.dat <- dat[,c(firmagraphic, behavioral)]
 firm.behavior.dat$X_revenue_lm <- dat$X_revenue_lm
+# firm.behavior.dat$X_revenue_lm <- dat$ltv
 qplot(Industry_Survey, data=firm.behavior.dat, geom='bar')
 
 # How many do not have their own domain? 42 - possibly slightly more successful
@@ -172,7 +191,7 @@ products.plan <- qplot(Products_From, data=firm.behavior.dat, geom="bar", fill=p
 rev.shipfromplaces <- qplot(ShipFromPlaces, X_revenue_lm, data=firm.behavior.dat, geom=c('point')) + geom_smooth(method = "lm")
 
 # Let's see which variables relate to revenue
-model.vars <- c("Physical", "Switched", "Products_From", "Experienced", "Loc.Region", "Marketing.Budget", "age", "Annual.Plan", "Subdomain", "Ship.Range", "plan_name", "X_revenue_lm")
+model.vars <- c("Physical", "Switched", "Products_From", "Experienced", "Loc.Region", "Marketing.Budget", "age", "Annual.Plan", "Ship.Range", "plan_name", "X_revenue_lm") # "Subdomain",
 
 m1 <- lm(X_revenue_lm ~ ., data=firm.behavior.dat[,model.vars])
 anova(m1)
